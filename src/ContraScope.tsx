@@ -1,18 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Upload, FileText, AlertTriangle, CheckCircle, Download, GitCompare, MessageSquare, Star,
-  Eye, AlertCircle, Sparkles, Brain, Lightbulb, Languages, Search, PenTool, Link as LinkIcon,
-  Clock, Lock, Copy, Check, Sun, Moon
+  AlertCircle, Sparkles, Brain, Lightbulb, Languages, Search, PenTool, Link as LinkIcon,
+  Lock, Copy, Check, Sun, Moon
 } from "lucide-react";
-
-/** -------------------------------------------------------------
- * ContraScope — MVP complet (front-only)
- *  - Analyse locale (heuristique)
- *  - Comparaison A/B mot-à-mot
- *  - Q&A par recherche d’extraits
- *  - Signature locale (empreinte + horodatage) + historique
- *  - Multilingue + thème sombre/clair
- * ------------------------------------------------------------- */
 
 type Risk = "low"|"medium"|"high";
 interface ClauseIssue { clause:string; risk:Risk; issue:string; suggestion:string }
@@ -23,7 +14,6 @@ interface AnalysisResult {
   negotiationPoints:NegotiationPoint[]; summary:string; sourceText:string;
 }
 
-// ---------- i18n ----------
 const tdict = {
   fr: {
     subtitle:"MVP • Analyse • Comparaison • Q&A • Signature",
@@ -71,10 +61,9 @@ const tdict = {
     signatureCertified:"Certified digital signature", signatureHistory:"Signature history",
     shareSecure:"Secure share link",
   }
-};
+} as const;
 type Lang = keyof typeof tdict;
 
-// ---------- Glossary ----------
 const LEGAL_TERMS = [
   { k:/résiliation|termination/i, fr:"Fin anticipée du contrat.", en:"Early ending of the contract." },
   { k:/responsabilit[eé]|liability/i, fr:"Limite qui paye en cas de problème.", en:"Limits who pays if something goes wrong." },
@@ -82,41 +71,43 @@ const LEGAL_TERMS = [
   { k:/rgpd|gdpr|confidentialit[eé]|confidentiality/i, fr:"Règles sur données personnelles et secret.", en:"Personal data & confidentiality rules." },
   { k:/arbitrage|arbitration/i, fr:"Règlement privé des litiges.", en:"Private dispute resolution." },
 ];
-function glossaryFor(text:string, lang:Lang){ 
-  const out:{term:string,def:string}[]=[]; 
-  for(const it of LEGAL_TERMS){ const m=text.match(it.k); if(m) out.push({term:m[0], def:(it as any)[lang]}); } 
+function glossaryFor(text:string, lang:Lang){
+  const out:{term:string,def:string}[]=[];
+  for(const it of LEGAL_TERMS){ const m=text.match(it.k); if(m) out.push({term:m[0], def:(it as any)[lang]}); }
   return out;
 }
 
-// ---------- Utils ----------
 const prettyRisk=(r:Risk,t:any)=>r==="low"?t.riskLow:r==="medium"?t.riskMed:t.riskHigh;
 const riskPill=(r:Risk)=>r==="low"?"text-emerald-600 bg-emerald-50 border-emerald-200":r==="medium"?"text-amber-600 bg-amber-50 border-amber-200":"text-red-600 bg-red-50 border-red-200";
 const riskIcon=(r:Risk)=>r==="low"?<CheckCircle className="w-4 h-4"/>:r==="medium"?<AlertCircle className="w-4 h-4"/>:<AlertTriangle className="w-4 h-4"/>;
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const hashLite=(s:string)=>{ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0 } return ("00000000"+(h>>>0).toString(16)).slice(-8) }
 
-// ---------- PDF/DOCX -> texte ----------
+// -------- PDF/DOCX -> texte (pdfjs-dist v3) --------
 async function extractTextFromFile(file: File): Promise<string> {
   if (file.type==="application/pdf"||file.name.endsWith(".pdf")){
-    const pdfjs=await import("pdfjs-dist");
-    // @ts-ignore
-    const workerSrc=`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjs as any).version}/pdf.worker.min.js`;
-    // @ts-ignore
-    pdfjs.GlobalWorkerOptions.workerSrc=workerSrc;
-    // @ts-ignore
-    const loadingTask=pdfjs.getDocument({data:await file.arrayBuffer()});
-    const pdf=await loadingTask.promise; let full="";
-    for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const content=await page.getTextContent(); full+="\n"+content.items.map((i:any)=>i.str||"").join(" "); }
+    const pdfjs:any = await import("pdfjs-dist");
+    const workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+    const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer() });
+    const pdf = await loadingTask.promise; let full = "";
+    for (let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      full += "\n" + content.items.map((i:any)=>i.str||"").join(" ");
+    }
     return full;
   }
   if (file.type==="application/vnd.openxmlformats-officedocument.wordprocessingml.document"||file.name.endsWith(".docx")){
-    const mammoth=await import("mammoth/mammoth.browser");
-    const ab=await file.arrayBuffer(); const res=await mammoth.extractRawText({arrayBuffer:ab}); return res.value||"";
+    const mammoth:any = await import("mammoth/mammoth.browser");
+    const ab = await file.arrayBuffer();
+    const res = await mammoth.extractRawText({ arrayBuffer: ab });
+    return res.value || "";
   }
   return await file.text();
 }
 
-// ---------- Analyse heuristique locale ----------
+// -------- Analyse heuristique locale --------
 function analyzeTextLocally(raw:string):Omit<AnalysisResult,"analyzedAt">{
   const text=raw.replace(/\s+/g," ").trim();
   const rules:{name:string;pattern:RegExp;risk:Risk;issue:string;suggestion:string}[]=[
@@ -141,7 +132,7 @@ function analyzeTextLocally(raw:string):Omit<AnalysisResult,"analyzedAt">{
   return { globalScore:score, riskLevel, problematicClauses:found, negotiationPoints, summary, sourceText:text };
 }
 
-// ---------- Diff mot-à-mot ----------
+// -------- Diff mot-à-mot --------
 async function makeDiffHTML(fileA:File, fileB:File){
   const [a,b]=await Promise.all([extractTextFromFile(fileA), extractTextFromFile(fileB)]);
   const A=a.split(/\s+/), B=b.split(/\s+/);
@@ -158,7 +149,7 @@ async function makeDiffHTML(fileA:File, fileB:File){
   return out.join(" ");
 }
 
-// ---------- Q&A local ----------
+// -------- Q&A local --------
 function qaFind(text:string, question:string, t:any){
   if(!text) return [{clause:"—", summary:t.noneYet}];
   const q=question.toLowerCase().split(/\s+/).filter(w=>w.length>3);
@@ -170,7 +161,7 @@ function qaFind(text:string, question:string, t:any){
   return hits.length?hits:[{clause:"—", summary:"Aucune clause correspondante trouvée."}];
 }
 
-// ---------- Jauge ----------
+// -------- Jauge --------
 function Gauge({value}:{value:number}){
   const r=52, C=2*Math.PI*r, off=C*(1-value/100);
   const color=value>70?"text-red-400":value>45?"text-amber-400":"text-emerald-400";
@@ -185,7 +176,7 @@ function Gauge({value}:{value:number}){
   )
 }
 
-// ===========================================================
+// ======================= UI =======================
 
 export default function ContraScope(){
   const [lang,setLang]=useState<Lang>("fr");
@@ -437,7 +428,7 @@ export default function ContraScope(){
                     </div>
                   </div>
 
-                  {/* Glossary */}
+                  {/* Glossaire */}
                   <div>
                     <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><BookOpenIcon/> {t.glossaryTitle}</h3>
                     <div className="space-y-2">
@@ -530,7 +521,7 @@ export default function ContraScope(){
   )
 }
 
-// Petit composant inline pour l’icône “book” (évite une lib en plus)
+// petite icône livre inline (évite une lib en plus)
 function BookOpenIcon(){ return (
   <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-200"><path fill="currentColor" d="M12 6c-1.657 0-3 .843-3 1.882V20c0-1.04 1.343-1.882 3-1.882s3 .842 3 1.882V7.882C15 6.843 13.657 6 12 6m9 0c-2.761 0-5 1.567-5 3.5V22h2v-1.5c0-.828.895-1.5 2-1.5s2 .672 2 1.5V22h2V9.5C24 7.567 21.761 6 19 6M0 9.5V22h2v-1.5c0-.828.895-1.5 2-1.5s2 .672 2 1.5V22h2V9.5C8 7.567 5.761 6 3 6S0 7.567 0 9.5"/></svg>
 )}
