@@ -2,18 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mode clair forcé */
-html.light {
-  background-color: #ffffff;
-  color: #0f172a;
+/* Lissage des polices */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-html.light body {
-  background-color: #ffffff;
-  color: #0f172a;
+/* Forces de fond par défaut — la page est déjà gérée par ContraScope,
+   mais on évite le flash blanc au chargement */
+:root {
+  color-scheme: light dark;
+  background: #0f172a; /* slate-900 */
+}
+.light :root, .light body {
+  background: #f8fafc; /* slate-50 */
 }
 
-/* Corrige si une classe .text-white traîne */
-html.light .text-white {
-  color: #0f172a !important;
+/* Optionnel : limiter la largeur des blocs prose rendus par le diff */
+.prose {
+  max-width: none;
 }
