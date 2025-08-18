@@ -1,10 +1,13 @@
-import React from "react"
-import ReactDOM from "react-dom/client"
-import "./index.css"
-import ContraScope from "./ContraScope"
+import React from "react";
+import { createRoot } from "react-dom/client";
+import ContraScope from "./ContraScope";
+import "./index.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const container = document.getElementById("root")!;
+const root = createRoot(container);
+
+root.render(
   <React.StrictMode>
     <ContraScope />
   </React.StrictMode>
-)
+);
