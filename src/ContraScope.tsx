@@ -17,7 +17,6 @@ interface AnalysisResult {
 
 /* ==============================
    i18n (FR / EN)
-   -> ajoute une langue en copiant un bloc et en traduisant
 ============================== */
 const I18N = {
   FR: {
@@ -140,14 +139,11 @@ const riskPill = (r: Risk) =>
   r==="low"?"text-emerald-600 bg-emerald-50 border-emerald-200":
   r==="medium"?"text-amber-600 bg-amber-50 border-amber-200":
   "text-red-600 bg-red-50 border-red-200";
-
-/* Localisé : retourne le label du niveau de risque selon la langue */
 const prettyRisk = (r: Risk, L: typeof I18N[LangKey]) =>
   r==="low" ? L.riskLow : r==="medium" ? L.riskMed : L.riskHigh;
 
 /* ==============================
    PDF/DOCX -> texte (démo local)
-   (tu peux remplacer par pdfjs-dist & mammoth plus tard)
 ============================== */
 async function extractTextFromFile(file: File): Promise<string> {
   return new Promise((resolve) => {
@@ -253,7 +249,7 @@ export default function ContraScope() {
 
   const [tab, setTab] = useState<Tab>("analyze");
 
-  // mode clair lisible
+  // mode clair/sombre
   useEffect(() => {
     const html = document.documentElement;
     if (dark) { html.classList.remove("light"); html.style.colorScheme = "dark"; }
@@ -331,44 +327,43 @@ export default function ContraScope() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
-      dark ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" 
+      dark ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
            : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
     }`}>
       {/* HEADER */}
-      <div className={`backdrop-blur-sm border-b transition-colors duration-300 ${
+      <div className={`backdrop-blur-sm border-b ${
         dark ? "bg-slate-800/80 border-slate-700/50" : "bg-white/80 border-gray-200/50"
       }`}>
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl grid place-items-center">
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className={`text-2xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
-                  {L.appTitle.slice(0,6)}
-                  <span className="text-cyan-400">{L.appTitle.slice(6)}</span>
+                <h1 className={`text-3xl font-extrabold tracking-tight ${dark?"text-white":"text-gray-900"}`}>
+                  {L.appTitle.slice(0,6)}<span className="text-cyan-400">{L.appTitle.slice(6)}</span>
                 </h1>
-                <p className={`text-sm ${dark ? "text-slate-400" : "text-gray-600"}`}>{L.appSubtitle}</p>
+                <p className={`mt-1 text-sm ${dark?"text-slate-400":"text-gray-600"}`}>{L.appSubtitle}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setDark(!dark)}
-                className={`p-2 rounded-lg transition-colors ${
-                  dark ? "bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white"
-                       : "bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900"
+                className={`px-3 py-2 rounded-lg ${
+                  dark ? "bg-slate-700/50 text-slate-200 hover:bg-slate-700"
+                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 title={dark ? "Light" : "Dark"}
               >
                 {dark ? I18N.FR.themeLight : I18N.FR.themeDark}
               </button>
-              <select 
+              <select
                 value={lang}
-                onChange={(e) => setLang(e.target.value as LangKey)}
-                className={`border rounded-lg px-3 py-1 text-sm transition-colors ${
+                onChange={(e)=>setLang(e.target.value as LangKey)}
+                className={`px-3 py-2 rounded-lg border ${
                   dark ? "bg-slate-700/50 border-slate-600 text-slate-200"
-                       : "bg-white border-gray-300 text-gray-700"
+                       : "bg-white border-gray-300 text-gray-800"
                 }`}
               >
                 <option value="FR">FR</option>
@@ -376,179 +371,150 @@ export default function ContraScope() {
               </select>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* NAV TABS */}
-      <div className={`backdrop-blur-sm border-b transition-colors duration-300 ${
-        dark ? "bg-slate-800/60 border-slate-700/30" : "bg-white/60 border-gray-200/30"
-      }`}>
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-2 py-3">
-            <button
-              onClick={() => setTab("analyze")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                tab === "analyze"
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25"
-                  : dark ? "bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                         : "bg-gray-100/50 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900"
-              }`}
-            >
-              <Upload className="w-4 h-4" />
-              {L.tabAnalyze}
-            </button>
-            <button
-              onClick={() => setTab("compare")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                tab === "compare"
-                  ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
-                  : dark ? "bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                         : "bg-gray-100/50 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900"
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              {L.tabCompare}
-            </button>
-            <button
-              onClick={() => setTab("qa")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                tab === "qa"
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25"
-                  : dark ? "bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                         : "bg-gray-100/50 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900"
-              }`}
-            >
-              <Search className="w-4 h-4" />
-              {L.tabQA}
-            </button>
-            <button
-              onClick={() => setTab("sign")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                tab === "sign"
-                  ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/25"
-                  : dark ? "bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                         : "bg-gray-100/50 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900"
-              }`}
-            >
-              <Edit3 className="w-4 h-4" />
-              {L.tabSign}
-            </button>
+          {/* NAV TABS – larges “pills” comme ta capture */}
+          <div className="mt-6">
+            <div className={`grid grid-cols-4 gap-3 rounded-2xl p-1 ${
+              dark ? "bg-white/5 border border-white/10" : "bg-black/[0.04] border border-black/[0.06]"
+            }`}>
+              <button
+                onClick={()=>setTab("analyze")}
+                className={`flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-semibold ${
+                  tab==="analyze"
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+                    : dark ? "text-slate-300 hover:bg-white/10" : "text-gray-700 hover:bg-black/[0.06]"
+                }`}
+              >
+                <Upload className="w-4 h-4" /> {L.tabAnalyze}
+              </button>
+              <button
+                onClick={()=>setTab("compare")}
+                className={`flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-semibold ${
+                  tab==="compare"
+                    ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
+                    : dark ? "text-slate-300 hover:bg-white/10" : "text-gray-700 hover:bg-black/[0.06]"
+                }`}
+              >
+                <FileText className="w-4 h-4" /> {L.tabCompare}
+              </button>
+              <button
+                onClick={()=>setTab("qa")}
+                className={`flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-semibold ${
+                  tab==="qa"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+                    : dark ? "text-slate-300 hover:bg-white/10" : "text-gray-700 hover:bg-black/[0.06]"
+                }`}
+              >
+                <Search className="w-4 h-4" /> {L.tabQA}
+              </button>
+              <button
+                onClick={()=>setTab("sign")}
+                className={`flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-semibold ${
+                  tab==="sign"
+                    ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+                    : dark ? "text-slate-300 hover:bg-white/10" : "text-gray-700 hover:bg-black/[0.06]"
+                }`}
+              >
+                <Edit3 className="w-4 h-4" /> {L.tabSign}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* MAIN */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[1200px] mx-auto px-6 py-10">
         {tab === "analyze" && (
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Upload */}
-            <div className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-10">
+            {/* Col gauche : Upload */}
+            <div className="space-y-8">
               <div
-                className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer hover:border-cyan-500/50 transition-all group ${
-                  dark ? "border-slate-600/50 hover:bg-slate-800/30"
-                       : "border-gray-300/50 hover:bg-gray-50/50"
+                className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all group ${
+                  dark ? "border-slate-600/60 hover:border-cyan-400/60 hover:bg-slate-800/40"
+                       : "border-gray-300/70 hover:border-cyan-400/80 hover:bg-gray-50"
                 }`}
-                onClick={() => document.getElementById("file-input")?.click()}
+                onClick={()=>document.getElementById("file-input")?.click()}
               >
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl grid place-items-center group-hover:scale-105 transition">
                   <FileText className="w-8 h-8 text-white" />
                 </div>
-                <h3 className={`text-xl font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>
-                  {L.dragDrop}
-                </h3>
-                <p className={`${dark ? "text-slate-400" : "text-gray-600"}`}>{L.formats}</p>
-                <input
-                  id="file-input"
-                  type="file"
-                  accept=".pdf,.docx"
-                  multiple
-                  hidden
-                  onChange={(e)=>handleFiles(Array.from(e.target.files||[]))}
-                />
+                <h3 className={`text-xl font-semibold mb-2 ${dark?"text-white":"text-gray-900"}`}>{L.dragDrop}</h3>
+                <p className={`${dark?"text-slate-400":"text-gray-600"}`}>{L.formats}</p>
+                <input id="file-input" type="file" accept=".pdf,.docx" multiple hidden onChange={(e)=>handleFiles(Array.from(e.target.files||[]))}/>
               </div>
 
-              <div className={`backdrop-blur-sm rounded-2xl p-6 border transition-colors ${
-                dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+              <div className={`rounded-2xl p-6 border ${
+                dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
               }`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText className={`w-5 h-5 ${dark ? "text-slate-400" : "text-gray-500"}`} />
-                  <label className={`font-medium ${dark ? "text-slate-300" : "text-gray-700"}`}>
-                    {L.pasteText}
-                  </label>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className={`w-5 h-5 ${dark?"text-slate-300":"text-gray-500"}`} />
+                  <span className={`font-medium ${dark?"text-slate-200":"text-gray-700"}`}>{L.pasteText}</span>
                 </div>
                 <textarea
-                  className={`w-full h-40 border rounded-xl px-4 py-3 placeholder-opacity-60 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all resize-none ${
-                    dark ? "bg-slate-900/50 border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-cyan-500"
-                         : "bg-gray-50/50 border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-cyan-500"
+                  className={`w-full h-44 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none ${
+                    dark ? "bg-slate-900/60 text-slate-200 border border-slate-600/60 placeholder-slate-500 focus:ring-cyan-500/30"
+                         : "bg-gray-50 text-gray-900 border border-gray-300 placeholder-gray-500 focus:ring-cyan-500/20"
                   }`}
-                  placeholder={L.pasteText + "..."}
+                  placeholder={L.pasteText+"…"}
                   value={textInput}
                   onChange={(e)=>setTextInput(e.target.value)}
                 />
-                <button
-                  onClick={analyzeNow}
-                  disabled={busy}
-                  className="mt-4 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all disabled:opacity-50"
-                >
-                  {busy ? L.analyzing : L.analyzeBtn}
-                </button>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={analyzeNow}
+                    disabled={busy}
+                    className="h-11 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50"
+                  >
+                    {busy ? L.analyzing : L.analyzeBtn}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Results */}
+            {/* Col droite : Résultats */}
             <div>
               {busy ? (
-                <div className={`backdrop-blur-sm rounded-2xl p-8 border text-center transition-colors ${
-                  dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                <div className={`rounded-2xl p-12 text-center border ${
+                  dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
                 }`}>
-                  <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className={`${dark ? "text-slate-300" : "text-gray-700"}`}>{L.analyzing}</p>
+                  <div className="w-10 h-10 mx-auto rounded-full border-2 border-cyan-500 border-t-transparent animate-spin mb-4"></div>
+                  <p className={`${dark?"text-slate-300":"text-gray-700"}`}>{L.analyzing}</p>
                 </div>
               ) : result ? (
-                <div className="space-y-6">
-                  <div className={`backdrop-blur-sm rounded-2xl p-6 border transition-colors ${
-                    dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                <div className="space-y-8">
+                  <div className={`rounded-2xl p-6 border ${
+                    dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
                   }`}>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-start justify-between gap-6">
                       <div>
-                        <p className={`text-sm ${dark ? "text-slate-400" : "text-gray-600"}`}>
-                          {result.fileName || (lang==="FR"?"Texte":"Text")}
-                        </p>
-                        <p className={`text-xs ${dark ? "text-slate-500" : "text-gray-500"}`}>
-                          {new Date(result.analyzedAt).toLocaleString()}
-                        </p>
+                        <p className={`text-sm ${dark?"text-slate-400":"text-gray-600"}`}>{result.fileName || (lang==="FR"?"Texte":"Text")}</p>
+                        <p className={`text-xs ${dark?"text-slate-500":"text-gray-500"}`}>{new Date(result.analyzedAt).toLocaleString()}</p>
                       </div>
                       <div className="text-right">
                         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-semibold ${riskPill(result.riskLevel)}`}>
                           {prettyRisk(result.riskLevel, L)}
                         </div>
-                        <div className={`text-2xl font-bold mt-1 ${dark ? "text-white" : "text-gray-900"}`}>
-                          {result.globalScore}/100
-                        </div>
+                        <div className={`text-3xl font-bold mt-1 ${dark?"text-white":"text-gray-900"}`}>{result.globalScore}/100</div>
                       </div>
                     </div>
-                    
-                    <div className={`border rounded-xl p-4 transition-colors ${
-                      dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50/50 border-gray-200/30"
+
+                    <div className={`mt-5 rounded-xl p-4 border ${
+                      dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50 border-gray-200/50"
                     }`}>
-                      <h4 className={`font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>
-                        {L.summary}
-                      </h4>
-                      <p className={`text-sm ${dark ? "text-slate-300" : "text-gray-700"}`}>
-                        {result.summary}
-                      </p>
+                      <h4 className={`font-semibold mb-2 ${dark?"text-white":"text-gray-900"}`}>{L.summary}</h4>
+                      <p className={`${dark?"text-slate-300":"text-gray-700"} text-sm`}>{result.summary}</p>
                     </div>
                   </div>
 
-                  {result.problematicClauses.length > 0 && (
-                    <div className={`backdrop-blur-sm rounded-2xl p-6 border transition-colors ${
-                      dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                  {result.problematicClauses.length>0 && (
+                    <div className={`rounded-2xl p-6 border ${
+                      dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
                     }`}>
                       <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.probClauses}</h3>
                       <div className="space-y-4">
-                        {result.problematicClauses.map((c, i) => (
+                        {result.problematicClauses.map((c,i)=>(
                           <div key={i} className={`rounded-xl p-4 border ${
-                            dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50/50 border-gray-200/30"
+                            dark?"bg-slate-900/50 border-slate-600/30":"bg-gray-50 border-gray-200/50"
                           }`}>
                             <div className="flex items-center justify-between mb-2">
                               <h4 className={`${dark?"text-white":"text-gray-900"} font-medium`}>{c.clause}</h4>
@@ -558,9 +524,7 @@ export default function ContraScope() {
                             </div>
                             <p className={`${dark?"text-slate-300":"text-gray-700"} text-sm mb-3`}>{c.issue}</p>
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                              <p className="text-emerald-700 dark:text-emerald-200 text-sm">
-                                <span className="font-medium">💡</span> {c.suggestion}
-                              </p>
+                              <p className="text-emerald-700 dark:text-emerald-200 text-sm">💡 {c.suggestion}</p>
                             </div>
                           </div>
                         ))}
@@ -568,15 +532,15 @@ export default function ContraScope() {
                     </div>
                   )}
 
-                  {result.negotiationPoints.length > 0 && (
-                    <div className={`backdrop-blur-sm rounded-2xl p-6 border transition-colors ${
-                      dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                  {result.negotiationPoints.length>0 && (
+                    <div className={`rounded-2xl p-6 border ${
+                      dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
                     }`}>
                       <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.negoPoints}</h3>
                       <div className="space-y-3">
-                        {result.negotiationPoints.map((p, i) => (
+                        {result.negotiationPoints.map((p,i)=>(
                           <div key={i} className={`rounded-xl p-4 border ${
-                            dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50/50 border-gray-200/30"
+                            dark?"bg-slate-900/50 border-slate-600/30":"bg-gray-50 border-gray-200/50"
                           }`}>
                             <h4 className={`${dark?"text-white":"text-gray-900"} font-medium mb-2`}>{p.point}</h4>
                             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
@@ -589,8 +553,8 @@ export default function ContraScope() {
                   )}
                 </div>
               ) : (
-                <div className={`rounded-2xl p-8 border text-center ${
-                  dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                <div className={`rounded-2xl p-12 text-center border ${
+                  dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
                 }`}>
                   <FileText className="w-16 h-16 mx-auto mb-4 text-slate-500" />
                   <p className={`${dark?"text-slate-300":"text-gray-700"}`}>{L.analyzeHint}</p>
@@ -601,115 +565,114 @@ export default function ContraScope() {
         )}
 
         {tab === "compare" && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="text-center mb-8">
+          <div className="max-w-[900px] mx-auto space-y-8">
+            <div className="text-center">
               <h2 className={`${dark?"text-white":"text-gray-900"} text-3xl font-bold mb-2`}>{L.compareTitle}</h2>
               <p className={`${dark?"text-slate-400":"text-gray-600"}`}>{L.compareDesc}</p>
             </div>
-            
-            <div className="grid md:grid-cols-2 gap-6">
+
+            <div className="grid md:grid-cols-2 gap-8">
               <div className={`rounded-2xl p-6 border ${
-                dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
               }`}>
-                <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.versionA}</h3>
-                <input 
+                <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-3`}>{L.versionA}</h3>
+                <input
                   className={`block w-full text-sm rounded-lg px-3 py-2 focus:outline-none ${
-                    dark ? "text-slate-300 bg-slate-900/50 border border-slate-600/50 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                         : "text-gray-800 bg-gray-50/50 border border-gray-300/50 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                    dark ? "text-slate-300 bg-slate-900/60 border border-slate-600/60 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                         : "text-gray-800 bg-gray-50 border border-gray-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                   }`}
-                  type="file" 
-                  accept=".pdf,.docx" 
-                  onChange={(e)=>setFileA(e.target.files?.[0]||null)} 
+                  type="file"
+                  accept=".pdf,.docx"
+                  onChange={(e)=>setFileA(e.target.files?.[0]||null)}
                 />
                 {fileA && <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-2">✓ {fileA.name}</p>}
               </div>
 
               <div className={`rounded-2xl p-6 border ${
-                dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+                dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
               }`}>
-                <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.versionB}</h3>
-                <input 
+                <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-3`}>{L.versionB}</h3>
+                <input
                   className={`block w-full text-sm rounded-lg px-3 py-2 focus:outline-none ${
-                    dark ? "text-slate-300 bg-slate-900/50 border border-slate-600/50 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                         : "text-gray-800 bg-gray-50/50 border border-gray-300/50 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                    dark ? "text-slate-300 bg-slate-900/60 border border-slate-600/60 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                         : "text-gray-800 bg-gray-50 border border-gray-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                   }`}
-                  type="file" 
-                  accept=".pdf,.docx" 
-                  onChange={(e)=>setFileB(e.target.files?.[0]||null)} 
+                  type="file"
+                  accept=".pdf,.docx"
+                  onChange={(e)=>setFileB(e.target.files?.[0]||null)}
                 />
                 {fileB && <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-2">✓ {fileB.name}</p>}
               </div>
             </div>
-            
+
             <div className="text-center">
-              <button 
-                className="px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all"
+              <button
+                className="px-8 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-semibold shadow-lg shadow-violet-500/25 hover:from-violet-600 hover:to-purple-600"
                 onClick={runDiff}
               >
                 {L.launchComparison}
               </button>
             </div>
-            
+
             <div className={`rounded-2xl p-6 border min-h-64 ${
-              dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+              dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
             }`}>
               <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.results}</h3>
               <div className={`rounded-xl p-4 overflow-auto max-h-96 ${
-                dark ? "bg-slate-900/50" : "bg-gray-50/50"
+                dark ? "bg-slate-900/50" : "bg-gray-50"
               }`}>
-                {diffHTML ? (
-                  <div className="prose prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{__html:diffHTML}} />
-                ) : (
-                  <p className={`${dark?"text-slate-400":"text-gray-600"} text-center py-8`}>{L.compareEmpty}</p>
-                )}
+                {diffHTML
+                  ? <div className="prose prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{__html:diffHTML}} />
+                  : <p className={`${dark?"text-slate-400":"text-gray-600"} text-center py-8`}>{L.compareEmpty}</p>
+                }
               </div>
             </div>
           </div>
         )}
 
         {tab === "qa" && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="text-center mb-8">
+          <div className="max-w-[900px] mx-auto space-y-8">
+            <div className="text-center">
               <h2 className={`${dark?"text-white":"text-gray-900"} text-3xl font-bold mb-2`}>{L.qaTitle}</h2>
               <p className={`${dark?"text-slate-400":"text-gray-600"}`}>{L.qaDesc}</p>
             </div>
-            
+
             <div className={`rounded-2xl p-6 border ${
-              dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+              dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
             }`}>
               <div className="flex gap-3">
                 <input
-                  className={`flex-1 rounded-xl px-4 py-3 focus:outline-none transition-all ${
-                    dark ? "bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                         : "bg-gray-50/50 border border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                  className={`flex-1 rounded-xl px-4 py-3 focus:outline-none ${
+                    dark ? "bg-slate-900/60 text-slate-200 border border-slate-600/60 placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                         : "bg-gray-50 text-gray-900 border border-gray-300 placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                   }`}
                   placeholder={L.qaPlaceholder}
                   value={question}
                   onChange={(e)=>setQuestion(e.target.value)}
                 />
-                <button 
-                  className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all"
+                <button
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-600"
                   onClick={onSearch}
                 >
                   {L.search}
                 </button>
               </div>
             </div>
-            
+
             <div className={`rounded-2xl p-6 border ${
-              dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+              dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
             }`}>
               <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.results}</h3>
               <div className="space-y-3">
                 {qa?.map((r,idx)=>(
                   <div key={idx} className={`rounded-xl p-4 border ${
-                    dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50/50 border-gray-200/30"
+                    dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50 border-gray-200/50"
                   }`}>
                     <p className="text-emerald-700 dark:text-emerald-300 font-medium mb-2">{r.summary}</p>
                     <p className={`${dark?"text-slate-300":"text-gray-700"} text-sm`}>{r.clause}</p>
                   </div>
                 )) || (
-                  <div className="text-center py-8">
+                  <div className="text-center py-10">
                     <Search className="w-12 h-12 mx-auto mb-4 text-slate-500" />
                     <p className={`${dark?"text-slate-400":"text-gray-600"}`}>{L.qaAnalyzeFirst}</p>
                   </div>
@@ -720,37 +683,37 @@ export default function ContraScope() {
         )}
 
         {tab === "sign" && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="text-center mb-8">
+          <div className="max-w-[900px] mx-auto space-y-8">
+            <div className="text-center">
               <h2 className={`${dark?"text-white":"text-gray-900"} text-3xl font-bold mb-2`}>{L.signTitle}</h2>
               <p className={`${dark?"text-slate-400":"text-gray-600"}`}>{L.signDesc}</p>
             </div>
-            
+
             <div className={`rounded-2xl p-6 border ${
-              dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+              dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
             }`}>
               <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.newSignature}</h3>
               <div className="grid md:grid-cols-3 gap-4">
-                <input 
-                  className={`rounded-xl px-4 py-3 focus:outline-none transition-all ${
-                    dark ? "bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                         : "bg-gray-50/50 border border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                <input
+                  className={`rounded-xl px-4 py-3 focus:outline-none ${
+                    dark ? "bg-slate-900/60 text-slate-200 border border-slate-600/60 placeholder-slate-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                         : "bg-gray-50 text-gray-900 border border-gray-300 placeholder-gray-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
                   }`}
-                  placeholder={L.signerName} 
-                  value={sigName} 
-                  onChange={(e)=>setSigName(e.target.value)} 
+                  placeholder={L.signerName}
+                  value={sigName}
+                  onChange={(e)=>setSigName(e.target.value)}
                 />
-                <input 
-                  className={`rounded-xl px-4 py-3 focus:outline-none transition-all ${
-                    dark ? "bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                         : "bg-gray-50/50 border border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                <input
+                  className={`rounded-xl px-4 py-3 focus:outline-none ${
+                    dark ? "bg-slate-900/60 text-slate-200 border border-slate-600/60 placeholder-slate-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                         : "bg-gray-50 text-gray-900 border border-gray-300 placeholder-gray-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
                   }`}
-                  placeholder={L.signerEmail} 
-                  value={sigEmail} 
-                  onChange={(e)=>setSigEmail(e.target.value)} 
+                  placeholder={L.signerEmail}
+                  value={sigEmail}
+                  onChange={(e)=>setSigEmail(e.target.value)}
                 />
-                <button 
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all"
+                <button
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-semibold shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-rose-600"
                   onClick={signNow}
                 >
                   {L.signNow}
@@ -759,13 +722,13 @@ export default function ContraScope() {
             </div>
 
             <div className={`rounded-2xl p-6 border ${
-              dark ? "bg-slate-800/50 border-slate-700/50" : "bg-white/70 border-gray-200/50"
+              dark ? "bg-slate-800/60 border-slate-700/60" : "bg-white/80 border-gray-200/70"
             }`}>
               <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.signHistory}</h3>
               <div className="space-y-3">
-                {sigHistory.length ? sigHistory.map((s,idx)=>(
+                {sigHistory.length? sigHistory.map((s,idx)=>(
                   <div key={idx} className={`rounded-xl p-4 border flex items-center justify-between ${
-                    dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50/50 border-gray-200/30"
+                    dark ? "bg-slate-900/50 border-slate-600/30" : "bg-gray-50 border-gray-200/50"
                   }`}>
                     <div>
                       <p className={`${dark?"text-white":"text-gray-900"} font-medium`}>ID #{s.id}</p>
@@ -777,7 +740,7 @@ export default function ContraScope() {
                     </div>
                   </div>
                 )) : (
-                  <div className="text-center py-8">
+                  <div className="text-center py-10">
                     <Edit3 className="w-12 h-12 mx-auto mb-4 text-slate-500" />
                     <p className={`${dark?"text-slate-400":"text-gray-600"}`}>{L.noSignatures}</p>
                   </div>
