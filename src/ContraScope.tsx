@@ -1,162 +1,102 @@
 import React, { useState } from "react";
-import { Upload, FileText, Copy, Loader2 } from "lucide-react";
+import { Upload, FileText, Copy } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
-// Helpers d’apparence (light vs dark)
-const cardClass = (dark: boolean) =>
-  dark
-    ? "bg-white/5 border border-white/10"
-    : "bg-white/90 border border-slate-200 shadow-sm backdrop-blur-sm";
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
-const headingClass = (dark: boolean) =>
-  dark ? "text-white" : "text-slate-900 text-glow";
-
-const mutedTextClass = (dark: boolean) =>
-  dark ? "text-slate-300" : "text-slate-700 text-glow";
-
-const ContraScope: React.FC = () => {
-  const [dark, setDark] = useState(true);
+export default function ContraScope() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
     setFileName(file.name);
-    setLoading(true);
-
-    let text = "";
 
     if (file.type === "application/pdf") {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      for (let i = 0; i < pdf.numPages; i++) {
-        const page = await pdf.getPage(i + 1);
+      const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map((s: any) => s.str).join(" ") + "\n";
+        text += content.items.map((s: any) => s.str).join(" ");
       }
+      setSummary(analyzeText(text));
     } else if (
       file.type ===
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-      file.name.endsWith(".docx")
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      text = result.value;
+      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      setSummary(analyzeText(result.value));
     } else {
-      text = "Format non supporté.";
+      alert("Format non supporté. Importez un PDF ou DOCX.");
     }
+  };
 
-    // --- Fake résumé pour MVP ---
-    setSummary(
-      "Résumé clair du contrat :\n- Durée : 12 mois\n- Résiliation : préavis de 3 mois\n- Clause RGPD : conforme\n- Indemnisation : limitée à 10k€\n\nSuggestions de négociation :\n• Proposer un préavis de 1 mois au lieu de 3\n• Demander une limite d’indemnisation de 50k€\n• Clarifier la durée de renouvellement automatique"
-    );
-    setLoading(false);
+  const analyzeText = (text: string) => {
+    // Simulation d’analyse simple
+    return `Résumé clair du contrat :
+- Durée : 12 mois
+- Résiliation : préavis de 3 mois
+- Clause RGPD : conforme
+- Indemnisation : limitée à 10k€`;
+  };
+
+  const copyToClipboard = () => {
+    if (summary) {
+      navigator.clipboard.writeText(summary);
+      alert("Résumé copié !");
+    }
   };
 
   return (
-    <div
-      className={`${
-        dark
-          ? "bg-slate-950 text-slate-100"
-          : "bg-gradient-to-br from-white via-slate-50 to-white text-slate-900"
-      } min-h-screen antialiased`}
-    >
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1
-            className={`${headingClass(
-              dark
-            )} text-2xl font-bold flex items-center gap-2`}
-          >
-            <FileText className="w-6 h-6" />
-            ContraScope
-          </h1>
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center p-8 transition-colors">
+      {/* Titre */}
+      <h1 className="text-4xl font-extrabold mb-6 text-glow">ContraScope</h1>
+
+      {/* Zone de dépôt */}
+      <label className="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+        <Upload className="w-10 h-10 mb-3 text-glow" />
+        <span className="text-sm">Déposez un contrat PDF/DOCX ici</span>
+        <input type="file" className="hidden" onChange={handleFileUpload} />
+      </label>
+
+      {/* Nom du fichier */}
+      {fileName && (
+        <div className="mt-4 flex items-center space-x-2">
+          <FileText className="w-5 h-5" />
+          <span>{fileName}</span>
+        </div>
+      )}
+
+      {/* Résultats */}
+      {summary && (
+        <div className="mt-8 w-full max-w-2xl bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-glow">Résumé</h2>
+          <pre className="whitespace-pre-wrap">{summary}</pre>
+
+          {/* Bouton copier */}
           <button
-            onClick={() => setDark(!dark)}
-            className="px-3 py-1 text-sm rounded-lg border border-slate-400/30"
+            onClick={copyToClipboard}
+            className="mt-4 flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
           >
-            {dark ? "Mode clair" : "Mode sombre"}
+            <Copy className="w-4 h-4 mr-2" />
+            Copier
           </button>
+
+          {/* Suggestions */}
+          <div className="mt-6">
+            <h2 className="text-2xl font-bold mb-3 text-glow">Suggestions de négociation</h2>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Proposer un préavis de 1 mois au lieu de 3</li>
+              <li>Demander une limite d’indemnisation de 50k€</li>
+              <li>Clarifier la durée de renouvellement automatique</li>
+            </ul>
+          </div>
         </div>
-
-        {/* Importer un contrat */}
-        <div className={`${cardClass(dark)} rounded-2xl p-6 mb-6`}>
-          <h2
-            className={`${headingClass(
-              dark
-            )} font-bold text-lg flex items-center gap-2 mb-4`}
-          >
-            <Upload className="w-5 h-5" />
-            Importer un contrat
-          </h2>
-
-          <label
-            className="flex flex-col items-center justify-center border-2 border-dashed border-slate-400/40 rounded-xl p-10 cursor-pointer hover:border-indigo-500 transition"
-          >
-            <input
-              type="file"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
-              }}
-              accept=".pdf,.docx"
-            />
-            <span className="text-indigo-500 font-medium">
-              Glissez un PDF/DOCX ici ou cliquez
-            </span>
-            <span className={`${mutedTextClass(dark)} text-sm`}>
-              Formats : PDF, DOCX — 10 Mo max
-            </span>
-          </label>
-
-          {fileName && (
-            <p className={`${mutedTextClass(dark)} mt-4 flex items-center gap-2`}>
-              📄 {fileName}
-            </p>
-          )}
-        </div>
-
-        {/* Résultats */}
-        <div className={`${cardClass(dark)} rounded-2xl p-6 min-h-[24rem]`}>
-          <h2
-            className={`${headingClass(
-              dark
-            )} font-bold text-lg flex items-center gap-2 mb-4`}
-          >
-            Résultats
-          </h2>
-
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="animate-spin w-5 h-5 text-indigo-500" />
-              <span className={`${mutedTextClass(dark)}`}>
-                Analyse en cours…
-              </span>
-            </div>
-          ) : summary ? (
-            <div className="space-y-4">
-              <pre className="whitespace-pre-wrap text-sm leading-relaxed">
-                {summary}
-              </pre>
-              <button
-                className="flex items-center gap-2 px-3 py-1 rounded-lg bg-indigo-500 text-white text-sm hover:bg-indigo-600"
-                onClick={() => navigator.clipboard.writeText(summary)}
-              >
-                <Copy className="w-4 h-4" />
-                Copier
-              </button>
-            </div>
-          ) : (
-            <p className={`${mutedTextClass(dark)}`}>
-              Importez un fichier pour lancer l’analyse.
-            </p>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
-};
-
-export default ContraScope;
+}
