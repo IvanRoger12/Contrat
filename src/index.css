@@ -2,13 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Applique un léger glow aux textes */
+/* Glow doux en mode clair */
 .text-glow {
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.6),
                0 0 12px rgba(255, 255, 255, 0.4);
 }
 
-/* Mode sombre : glow bleu/violet plus visible */
+/* Glow néon en mode sombre */
 .dark .text-glow {
   text-shadow: 0 0 6px rgba(0, 153, 255, 0.6),
                0 0 12px rgba(138, 43, 226, 0.5);
