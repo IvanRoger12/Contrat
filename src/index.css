@@ -2,5 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
+/* petite base */
 :root { --bg: #0b1220; }
 html, body { background: var(--bg); }
