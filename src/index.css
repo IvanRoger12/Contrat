@@ -5,3 +5,12 @@
 /* petite base */
 :root { --bg: #0b1220; }
 html, body { background: var(--bg); }
+/* ---- Glow typographique doux pour le mode clair ---- */
+.text-glow { text-shadow: 0 0 0.5px rgba(0,0,0,.18); }
+.text-glow-strong { text-shadow: 0 1px 1.5px rgba(0,0,0,.22); }
+
+/* Sélection de texte plus “lumineuse” */
+::selection { background: rgba(217, 70, 239, .25); color: #111827; }
+
+/* Lissage police global */
+html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
