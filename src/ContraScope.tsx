@@ -1,102 +1,78 @@
-import React, { useState } from "react";
-import { Upload, FileText, Copy } from "lucide-react";
-import * as pdfjsLib from "pdfjs-dist";
-import mammoth from "mammoth";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
+import React, { useState } from "react"
+import { Upload, FileText, Sun, Moon } from "lucide-react"
 
 export default function ContraScope() {
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light")
+  const [file, setFile] = useState<File | null>(null)
+  const [summary, setSummary] = useState("")
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light"
+    setTheme(newTheme)
+    document.documentElement.classList.toggle("dark", newTheme === "dark")
+  }
 
-    setFileName(file.name);
-
-    if (file.type === "application/pdf") {
-      const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
-      let text = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map((s: any) => s.str).join(" ");
-      }
-      setSummary(analyzeText(text));
-    } else if (
-      file.type ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ) {
-      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-      setSummary(analyzeText(result.value));
-    } else {
-      alert("Format non supporté. Importez un PDF ou DOCX.");
-    }
-  };
-
-  const analyzeText = (text: string) => {
-    // Simulation d’analyse simple
-    return `Résumé clair du contrat :
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploaded = e.target.files?.[0]
+    if (uploaded) {
+      setFile(uploaded)
+      setSummary(`
+Résumé clair du contrat :
 - Durée : 12 mois
 - Résiliation : préavis de 3 mois
 - Clause RGPD : conforme
-- Indemnisation : limitée à 10k€`;
-  };
+- Indemnisation : limitée à 10k€
 
-  const copyToClipboard = () => {
-    if (summary) {
-      navigator.clipboard.writeText(summary);
-      alert("Résumé copié !");
+Suggestions de négociation :
+- Proposer un préavis de 1 mois au lieu de 3
+- Demander une limite d’indemnisation de 50k€
+- Clarifier la durée de renouvellement automatique
+`)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center p-8 transition-colors">
-      {/* Titre */}
-      <h1 className="text-4xl font-extrabold mb-6 text-glow">ContraScope</h1>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+      {/* Header */}
+      <header className="flex justify-between items-center p-4 shadow-md bg-white dark:bg-gray-800">
+        <h1 className="text-2xl font-bold text-glow">⚖️ ContraScope</h1>
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
+        >
+          {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
+      </header>
 
-      {/* Zone de dépôt */}
-      <label className="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-        <Upload className="w-10 h-10 mb-3 text-glow" />
-        <span className="text-sm">Déposez un contrat PDF/DOCX ici</span>
-        <input type="file" className="hidden" onChange={handleFileUpload} />
-      </label>
+      {/* Upload zone */}
+      <main className="flex flex-col items-center p-6 space-y-6">
+        <label
+          htmlFor="file-upload"
+          className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 cursor-pointer bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+        >
+          <Upload className="w-10 h-10 mb-2 text-gray-500" />
+          <span className="font-medium text-glow">Déposez un contrat PDF/DOCX ici</span>
+          <input
+            id="file-upload"
+            type="file"
+            accept=".pdf,.docx"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+        </label>
 
-      {/* Nom du fichier */}
-      {fileName && (
-        <div className="mt-4 flex items-center space-x-2">
-          <FileText className="w-5 h-5" />
-          <span>{fileName}</span>
-        </div>
-      )}
-
-      {/* Résultats */}
-      {summary && (
-        <div className="mt-8 w-full max-w-2xl bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-          <h2 className="text-2xl font-bold mb-4 text-glow">Résumé</h2>
-          <pre className="whitespace-pre-wrap">{summary}</pre>
-
-          {/* Bouton copier */}
-          <button
-            onClick={copyToClipboard}
-            className="mt-4 flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Copier
-          </button>
-
-          {/* Suggestions */}
-          <div className="mt-6">
-            <h2 className="text-2xl font-bold mb-3 text-glow">Suggestions de négociation</h2>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Proposer un préavis de 1 mois au lieu de 3</li>
-              <li>Demander une limite d’indemnisation de 50k€</li>
-              <li>Clarifier la durée de renouvellement automatique</li>
-            </ul>
+        {file && (
+          <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl p-4 shadow">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="text-blue-500" />
+              <p className="font-semibold">{file.name}</p>
+            </div>
+            <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg whitespace-pre-wrap text-sm text-glow">
+              {summary}
+            </pre>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
-  );
+  )
 }
