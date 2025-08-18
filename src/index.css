@@ -2,40 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🌟 Glow doux pour le texte clair */
+/* Applique un léger glow aux textes */
 .text-glow {
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6),
+               0 0 12px rgba(255, 255, 255, 0.4);
 }
 
-/* 🌟 Glow plus fort (ex: titres ou highlights) */
-.text-glow-strong {
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.9),
-               0 0 20px rgba(180, 200, 255, 0.5);
-}
-
-/* --- Thème clair --- */
-html.light {
-  color-scheme: light;
-  background: linear-gradient(to bottom right, #ffffff, #f9fafb, #ffffff);
-  color: #111827; /* slate-900 */
-}
-
-/* --- Thème sombre --- */
-html.dark {
-  color-scheme: dark;
-  background: #0f172a; /* slate-950 */
-  color: #f8fafc; /* slate-100 */
-}
-
-/* --- Scrollbar stylisée --- */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.5); /* slate-500 */
-  border-radius: 6px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.8); /* indigo-500 */
+/* Mode sombre : glow bleu/violet plus visible */
+.dark .text-glow {
+  text-shadow: 0 0 6px rgba(0, 153, 255, 0.6),
+               0 0 12px rgba(138, 43, 226, 0.5);
 }
