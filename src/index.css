@@ -1,55 +1,19 @@
-/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --- Base app (mode sombre par défaut, comme ta maquette) --- */
-:root {
-  --bg-dark: #0b1220; /* fond sombre */
-}
-html, body {
-  height: 100%;
-}
-body {
-  background: var(--bg-dark);
-}
-
-/* Optionnel : limiter la largeur prose quand on injecte du HTML (diff) */
-.prose {
-  max-width: 65ch;
-}
-
-/* --- Overrides pour le mode clair : lisibilité assurée --- */
-/* Le mode clair est activé quand on ajoute la classe `light` sur <html> */
-html.light,
-html.light body {
-  background: #ffffff;            /* fond blanc propre */
-  color: #0f172a;                 /* texte par défaut */
-}
-
-/* Textes trop clairs -> remappés en tons foncés */
-html.light .text-white       { color: #0f172a !important; }
-html.light .text-slate-300   { color: #334155 !important; }
-html.light .text-slate-200   { color: #475569 !important; }
-html.light .text-slate-100   { color: #1f2937 !important; }
-
-/* Surfaces sombres utilisées dans l'UI -> variantes claires */
-html.light .bg-white\/5      { background-color: rgba(15, 23, 42, 0.04) !important; }
-html.light .bg-black\/30     { background-color: rgba(15, 23, 42, 0.06) !important; }
-html.light .bg-slate-900\/40 { background-color: rgba(226, 232, 240, 0.60) !important; }
-html.light .bg-black\/20     { background-color: rgba(15, 23, 42, 0.08) !important; }
-
-/* Bordures très claires -> plus visibles en clair */
-html.light .border-white\/10 { border-color: rgba(15, 23, 42, 0.12) !important; }
-
-/* Inputs lisibles en clair */
-html.light input,
-html.light textarea,
-html.light select {
+/* Mode clair forcé */
+html.light {
+  background-color: #ffffff;
   color: #0f172a;
-  background-color: rgba(15, 23, 42, 0.04);
-  border-color: rgba(15, 23, 42, 0.12);
 }
 
-/* Prose (textes injectés, ex: diff) */
-html.light .prose :where(p):not(:where(.not-prose *)) { color: #0f172a; }
+html.light body {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* Corrige si une classe .text-white traîne */
+html.light .text-white {
+  color: #0f172a !important;
+}
