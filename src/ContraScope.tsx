@@ -113,7 +113,7 @@ const I18N = {
     results: "Results",
     qaAnalyzeFirst: "Analyze a contract first.",
     qaNone: "No matching clause found.",
-    qaFound: (k:string) => `Clause found: “${k}”`,
+    qaFound: (k:string) => `Clause found: "${k}"`,
     // sign
     signTitle: "Electronic Signature",
     signDesc: "Sign your contracts electronically",
@@ -133,8 +133,6 @@ type LangKey = keyof typeof I18N;
 /* ==============================
    Utils
 ============================== */
-const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
-
 const esc = (s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const hashLite=(s:string)=>{ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0 } return ("00000000"+(h>>>0).toString(16)).slice(-8) }
 const riskPill = (r: Risk) =>
@@ -177,19 +175,7 @@ Le traitement des données personnelles s'effectue conformément au RGPD. Le Pre
 }
 
 /* ==============================
-   Analyse heuristique locale
-============================== */
-function analyzeTextLocally(raw:string):Omit<AnalysisResult,"analyzedAt">{
-  const text = raw.replace(/\s+/g," ").trim();
-  const rules:{name:string;pattern:RegExp;risk:Risk;issue:string;suggestion:string}[] = [
-    { name:"Résiliation unilatérale", pattern:/(résiliation|termination).*?(unilat|sans\s+préavis|without\s+notice)/i, risk:"high", issue:"Résiliation possible par une seule partie, parfois sans préavis.", suggestion:"Exiger un préavis écrit de 30 jours minimum et motif légitime." },
-    { name:"Limitation de responsabilité étendue", pattern:/(limitation|responsabilit[eé]|liability).*(illimit|toutes\s+causes|any\s+cause)/i, risk:"medium", issue:"Limite la responsabilité pour toute cause.", suggestion:"Exclure la négligence grave/dolosive et prévoir un plafond raisonnable." },
-    { name:"Indemnisation à sens unique", pattern:/(indemn[iy]sation|hold\s+harmless).*(uniquement|one\s+way|b[eé]n[eé]fice\s+de)/i, risk:"medium", issue:"L'indemnisation ne bénéficie qu'à une partie.", suggestion:"Rendre l'indemnisation réciproque, proportionnée au risque." },
-    { name:"Renouvellement automatique", pattern:/(renouvellement\s+automatique|auto\s*renew|tacite\s+reconduction)/i, risk:"low", issue:"Reconduction sans action explicite.", suggestion:"Notification 30 jours avant + possibilité d'opposition simple." },
-    { name:"Données/Confidentialité", pattern:/(donn[eé]es|RGPD|GDPR|confidentialit[eé]|confidentiality)/i, risk:"medium", issue:"Mentions sensibles à cadrer.", suggestion:"Ajouter DPA RGPD, finalités, sous-traitants, mesures de sécurité." },
-  ];
-   /* ==============================
-   🚀 NOUVELLE FONCTION - Analyse avec API ContraScope
+   Analyse avec API ContraScope
 ============================== */
 async function analyzeTextWithAPI(text: string): Promise<Omit<AnalysisResult,"analyzedAt">> {
   try {
@@ -242,10 +228,24 @@ async function analyzeTextWithAPI(text: string): Promise<Omit<AnalysisResult,"an
   } catch (error) {
     console.error('❌ Erreur ContraScope API, fallback local:', error);
     
-    // 🔄 Votre analyse locale existante en fallback
+    // 🔄 Analyse locale en fallback
     return analyzeTextLocally(text);
   }
 }
+
+/* ==============================
+   Analyse heuristique locale
+============================== */
+function analyzeTextLocally(raw:string):Omit<AnalysisResult,"analyzedAt">{
+  const text = raw.replace(/\s+/g," ").trim();
+  const rules:{name:string;pattern:RegExp;risk:Risk;issue:string;suggestion:string}[] = [
+    { name:"Résiliation unilatérale", pattern:/(résiliation|termination).*?(unilat|sans\s+préavis|without\s+notice)/i, risk:"high", issue:"Résiliation possible par une seule partie, parfois sans préavis.", suggestion:"Exiger un préavis écrit de 30 jours minimum et motif légitime." },
+    { name:"Limitation de responsabilité étendue", pattern:/(limitation|responsabilit[eé]|liability).*(illimit|toutes\s+causes|any\s+cause)/i, risk:"medium", issue:"Limite la responsabilité pour toute cause.", suggestion:"Exclure la négligence grave/dolosive et prévoir un plafond raisonnable." },
+    { name:"Indemnisation à sens unique", pattern:/(indemn[iy]sation|hold\s+harmless).*(uniquement|one\s+way|b[eé]n[eé]fice\s+de)/i, risk:"medium", issue:"L'indemnisation ne bénéficie qu'à une partie.", suggestion:"Rendre l'indemnisation réciproque, proportionnée au risque." },
+    { name:"Renouvellement automatique", pattern:/(renouvellement\s+automatique|auto\s*renew|tacite\s+reconduction)/i, risk:"low", issue:"Reconduction sans action explicite.", suggestion:"Notification 30 jours avant + possibilité d'opposition simple." },
+    { name:"Données/Confidentialité", pattern:/(donn[eé]es|RGPD|GDPR|confidentialit[eé]|confidentiality)/i, risk:"medium", issue:"Mentions sensibles à cadrer.", suggestion:"Ajouter DPA RGPD, finalités, sous-traitants, mesures de sécurité." },
+  ];
+
   const found:ClauseIssue[] = [];
   for (const r of rules){ const m=text.match(r.pattern); if(m) found.push({clause:r.name,risk:r.risk,issue:r.issue,suggestion:r.suggestion}); }
   let score=30; const w={low:8,medium:15,high:25} as const;
@@ -287,7 +287,7 @@ async function makeDiffHTML(fileA:File, fileB:File){
 }
 
 /* ==============================
-   Q&A local (i18n) + API fallback
+   Q&A local
 ============================== */
 function qaFindLocal(text:string, question:string, L: typeof I18N[LangKey]){
   if(!text) return [{clause:"—", summary:L.qaAnalyzeFirst}];
@@ -298,19 +298,6 @@ function qaFindLocal(text:string, question:string, L: typeof I18N[LangKey]){
     while((m=re.exec(text))!==null){ hits.push({clause:m[1], summary:L.qaFound(k)}) }
   }
   return hits.length?hits:[{clause:"—", summary:L.qaNone}];
-}
-
-async function qaFindAPI(text:string, question:string, lang:LangKey){
-  if(!API_BASE) throw new Error("no api");
-  const r = await fetch(`${API_BASE.replace(/\/$/,"")}/qa`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ text, question, lang })
-  });
-  if(!r.ok) throw new Error("bad response");
-  const data = await r.json();
-  // attendu: { answers: [{clause:"...", summary:"..."}] }
-  return (data.answers ?? []) as {clause:string; summary:string}[];
 }
 
 /* ==============================
@@ -389,37 +376,12 @@ export default function ContraScope() {
 
   const onSearch = async () => {
     if (!result) { setQa([{clause:"—",summary:L.qaAnalyzeFirst}]); return; }
-    // Essaye l’API d’abord, retombe en local si indispo
-    try {
-      const apiAns = await qaFindAPI(result.sourceText, question, lang);
-      if (apiAns && apiAns.length) setQa(apiAns);
-      else setQa(qaFindLocal(result.sourceText, question, L));
-    } catch {
-      setQa(qaFindLocal(result.sourceText, question, L));
-    }
+    setQa(qaFindLocal(result.sourceText, question, L));
   };
 
   const signNow = async () => {
     const at = new Date().toISOString();
     const id = hashLite((result?.fileName||"")+(result?.analyzedAt||"")+sigName+sigEmail+at);
-
-    // Option : ping l’API si dispo
-    if (API_BASE) {
-      try {
-        await fetch(`${API_BASE.replace(/\/$/,"")}/sign`, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({
-            fileName: result?.fileName || "Doc",
-            analyzedAt: result?.analyzedAt || at,
-            signer: sigName || "—",
-            email: sigEmail || "—",
-          })
-        });
-      } catch {
-        // silencieux : fallback local
-      }
-    }
 
     setSigHistory([{id, at, signer:sigName||"—", email:sigEmail||"—"}, ...sigHistory]);
     setSigName(""); setSigEmail("");
@@ -754,12 +716,13 @@ export default function ContraScope() {
               <h3 className={`${dark?"text-white":"text-gray-900"} font-semibold mb-4`}>{L.results}</h3>
               <div className={`rounded-xl p-4 overflow-auto max-h-96 ${
                 dark ? "bg-slate-900/50" : "bg-gray-50/50"
-              }`}/>
-              {diffHTML ? (
-                <div className="prose prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{__html:diffHTML}} />
-              ) : (
-                <p className={`${dark?"text-slate-400":"text-gray-600"} text-center py-8`}>{L.compareEmpty}</p>
-              )}
+              }`}>
+                {diffHTML ? (
+                  <div className="prose prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{__html:diffHTML}} />
+                ) : (
+                  <p className={`${dark?"text-slate-400":"text-gray-600"} text-center py-8`}>{L.compareEmpty}</p>
+                )}
+              </div>
             </div>
           </div>
         )}
