@@ -188,6 +188,64 @@ function analyzeTextLocally(raw:string):Omit<AnalysisResult,"analyzedAt">{
     { name:"Renouvellement automatique", pattern:/(renouvellement\s+automatique|auto\s*renew|tacite\s+reconduction)/i, risk:"low", issue:"Reconduction sans action explicite.", suggestion:"Notification 30 jours avant + possibilité d'opposition simple." },
     { name:"Données/Confidentialité", pattern:/(donn[eé]es|RGPD|GDPR|confidentialit[eé]|confidentiality)/i, risk:"medium", issue:"Mentions sensibles à cadrer.", suggestion:"Ajouter DPA RGPD, finalités, sous-traitants, mesures de sécurité." },
   ];
+   /* ==============================
+   🚀 NOUVELLE FONCTION - Analyse avec API ContraScope
+============================== */
+async function analyzeTextWithAPI(text: string): Promise<Omit<AnalysisResult,"analyzedAt">> {
+  try {
+    console.log('🚀 Appel ContraScope API...');
+    
+    // 📡 Appel direct à votre API
+    const response = await fetch('https://ivan7889-contrascope-api.hf.space/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ text: text })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    const apiResponse = await response.json();
+    console.log('✅ Réponse API reçue:', apiResponse);
+
+    // 🔄 Conversion simple
+    const riskLevel = 
+      apiResponse.risk_level === "LOW" ? "low" :
+      apiResponse.risk_level === "MEDIUM" ? "medium" : "high";
+
+    const problematicClauses = (apiResponse.problematic_clauses || []).map((clause: string) => ({
+      clause: clause,
+      risk: riskLevel,
+      issue: "Clause identifiée comme risquée par ContraScope AI",
+      suggestion: "Révision recommandée par l'expert IA"
+    }));
+
+    const negotiationPoints = (apiResponse.recommendations || []).map((rec: string) => ({
+      point: rec,
+      priority: riskLevel,
+      alternative: rec
+    }));
+
+    return {
+      globalScore: Math.round(apiResponse.risk_score * 10),
+      riskLevel,
+      problematicClauses,
+      negotiationPoints,
+      summary: apiResponse.summary || `Score ContraScope: ${apiResponse.risk_score}/10`,
+      sourceText: text
+    };
+    
+  } catch (error) {
+    console.error('❌ Erreur ContraScope API, fallback local:', error);
+    
+    // 🔄 Votre analyse locale existante en fallback
+    return analyzeTextLocally(text);
+  }
+}
   const found:ClauseIssue[] = [];
   for (const r of rules){ const m=text.match(r.pattern); if(m) found.push({clause:r.name,risk:r.risk,issue:r.issue,suggestion:r.suggestion}); }
   let score=30; const w={low:8,medium:15,high:25} as const;
@@ -302,7 +360,7 @@ export default function ContraScope() {
   const analyzeNow = async () => {
     if (textInput.trim()) {
       setBusy(true);
-      const local = analyzeTextLocally(textInput);
+      const local = await analyzeTextWithAPI(textInput);
       setResult({ ...local, analyzedAt: new Date().toISOString(), fileName: lang==="FR" ? "Texte collé" : "Pasted text" });
       setBusy(false);
       return;
@@ -314,7 +372,7 @@ export default function ContraScope() {
     setBusy(true);
     try {
       const text = await extractTextFromFile(file);
-      const local = analyzeTextLocally(text);
+      const local = await analyzeTextWithAPI(text);
       setResult({ ...local, analyzedAt: new Date().toISOString(), fileName: file.name, fileSize: file.size });
     } catch {
       alert(L.alertReadFail);
